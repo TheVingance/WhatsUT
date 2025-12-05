@@ -65,3 +65,16 @@ Open your browser and navigate to the URL provided by the client (usually `http:
 
 - **Port Conflicts**: Ensure ports 3000 and 5173 are not in use.
 - **Database**: The server uses SQLite. A `whatsut.db` file will be created automatically in the parent directory of `src` when the server starts.
+
+## Como Executar este Projeto (Guia Rápido)
+
+1.  **Instalação**:
+    *   Abra o terminal na pasta `server` e execute: `npm install`
+    *   Abra o terminal na pasta `client` e execute: `npm install`
+
+2.  **Execução**:
+    *   No terminal do `server`: `npm start`
+    *   No terminal do `client`: `npm run dev`
+
+3.  **Acesso**:
+    *   Abra o navegador no endereço indicado (ex: `http://localhost:5173`).
