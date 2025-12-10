@@ -4,7 +4,7 @@ import { useAuth } from '../AuthContext';
 
 export default function CreateGroupModal({ onClose, onGroupCreated }) {
     const [name, setName] = useState('');
-    const { token } = useAuth();
+    const { token, logout } = useAuth();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -15,7 +15,15 @@ export default function CreateGroupModal({ onClose, onGroupCreated }) {
             onGroupCreated();
             onClose();
         } catch (err) {
-            alert('Failed to create group');
+            console.error(err);
+            if (err.response && (err.response.status === 403 || err.response.status === 401)) {
+                alert('Sessão expirada ou inválida. Por favor faça login novamente.');
+                logout();
+                onClose();
+            } else {
+                const errorMessage = err.response?.data?.error || err.message || 'Failed to create group';
+                alert(`Error: ${errorMessage}`);
+            }
         }
     };
 

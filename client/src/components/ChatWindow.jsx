@@ -12,7 +12,19 @@ export default function ChatWindow({ chat }) {
 
     useEffect(() => {
         setMessages([]); // Clear on chat switch
-    }, [chat]);
+        const fetchMessages = async () => {
+            try {
+                const res = await axios.get(`http://localhost:3000/messages`, {
+                    params: { type: chat.type, id: chat.id },
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setMessages(res.data);
+            } catch (err) {
+                console.error("Failed to load messages", err);
+            }
+        };
+        fetchMessages();
+    }, [chat, token]);
 
     useEffect(() => {
         if (!socket) return;
@@ -41,7 +53,8 @@ export default function ChatWindow({ chat }) {
         const messageData = {
             senderId: user.id,
             content: input,
-            timestamp: new Date()
+            timestamp: new Date(),
+            senderName: user.username
         };
 
         if (chat.type === 'group') {
@@ -73,7 +86,8 @@ export default function ChatWindow({ chat }) {
                 senderId: user.id,
                 content: `Sent a file: ${res.data.fileName}`,
                 filePath: res.data.filePath,
-                timestamp: new Date()
+                timestamp: new Date(),
+                senderName: user.username
             };
 
             if (chat.type === 'group') {
@@ -101,7 +115,7 @@ export default function ChatWindow({ chat }) {
                     return (
                         <div key={idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                             <div className={`max-w-xs md:max-w-md p-3 rounded-lg ${isMe ? 'bg-blue-500 text-white' : 'bg-white border'}`}>
-                                {!isMe && chat.type === 'group' && <p className="text-xs font-bold mb-1">User {msg.senderId}</p>}
+                                {!isMe && chat.type === 'group' && <p className="text-xs font-bold mb-1">{msg.senderName || 'User ' + msg.senderId}</p>}
                                 <p>{msg.content}</p>
                                 {msg.filePath && (
                                     <a href={`http://localhost:3000${msg.filePath}`} target="_blank" rel="noopener noreferrer" className="text-xs underline mt-1 block text-blue-200">

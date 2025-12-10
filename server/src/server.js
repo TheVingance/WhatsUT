@@ -42,15 +42,58 @@ app.get('/users', authenticateToken, (req, res) => {
 });
 
 // Group Routes
+app.get('/groups', authenticateToken, (req, res) => {
+    db.all('SELECT id, name, admin_id FROM groups', [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
+    });
+});
+
 app.post('/groups', authenticateToken, (req, res) => {
     const { name } = req.body;
     db.run('INSERT INTO groups (name, admin_id) VALUES (?, ?)', [name, req.user.id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
+        if (err) {
+            if (err.message.includes('UNIQUE')) return res.status(400).json({ error: 'Group name already taken' });
+            return res.status(500).json({ error: err.message });
+        }
         // Add creator as member
         db.run('INSERT INTO group_members (group_id, user_id, status) VALUES (?, ?, ?)', [this.lastID, req.user.id, 'approved'], (err) => {
             if (err) return res.status(500).json({ error: err.message });
             res.status(201).json({ id: this.lastID, name, admin_id: req.user.id });
         });
+    });
+});
+
+// Message Routes
+app.get('/messages', authenticateToken, (req, res) => {
+    const { type, id } = req.query;
+    if (!type || !id) return res.status(400).json({ error: 'Missing parameters' });
+
+    let query = '';
+    let params = [];
+
+    if (type === 'group') {
+        query = `SELECT m.*, u.username as senderName 
+                 FROM messages m 
+                 LEFT JOIN users u ON m.sender_id = u.id 
+                 WHERE m.group_id = ? 
+                 ORDER BY m.timestamp ASC`;
+        params = [id];
+    } else if (type === 'user') {
+        const myId = req.user.id;
+        const otherId = id;
+        query = `SELECT * FROM messages 
+                 WHERE (sender_id = ? AND receiver_id = ?) 
+                    OR (sender_id = ? AND receiver_id = ?) 
+                 ORDER BY timestamp ASC`;
+        params = [myId, otherId, otherId, myId];
+    } else {
+        return res.status(400).json({ error: 'Invalid type' });
+    }
+
+    db.all(query, params, (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
     });
 });
 
